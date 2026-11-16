@@ -1,0 +1,44 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "users": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['uid', 'name', 'email']) && newData.child('uid').val() === $uid && newData.child('name').isString() && newData.child('email').isString()"
+      }
+    },
+    "status": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['state', 'lastChanged']) && (newData.child('state').val() === 'online' || newData.child('state').val() === 'offline') && newData.child('lastChanged').isNumber()"
+      }
+    },
+    "chats": {
+      "$conversationId": {
+        ".read": "auth != null && data.child('participants').child(auth.uid).val() === true",
+        ".write": "auth != null && ((!data.exists() && newData.child('participants').child(auth.uid).val() === true) || data.child('participants').child(auth.uid).val() === true)",
+        ".validate": "newData.child('participants').hasChildren() && newData.child('participants').child(auth.uid).val() === true",
+        "messages": {
+          ".indexOn": ["createdAt"],
+          "$messageId": {
+            ".write": "auth != null && !data.exists() && root.child('chats').child($conversationId).child('participants').child(auth.uid).val() === true",
+            ".validate": "newData.hasChildren(['senderId', 'text', 'createdAt']) && newData.child('senderId').val() === auth.uid && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('createdAt').isNumber()"
+          }
+        }
+      }
+    },
+    "userChats": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$peerId": {
+          ".read": "auth != null && (auth.uid === $uid || auth.uid === $peerId)",
+          ".write": "auth != null && (auth.uid === $uid || auth.uid === $peerId)",
+          ".validate": "newData.hasChildren(['peerId', 'lastMessage', 'lastMessageAt', 'unreadCount']) && newData.child('peerId').val() === $peerId && newData.child('lastMessage').isString() && newData.child('lastMessageAt').isNumber() && newData.child('unreadCount').isNumber() && newData.child('unreadCount').val() >= 0"
+        }
+      }
+    }
+  }
+}
